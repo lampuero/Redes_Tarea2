@@ -5,7 +5,7 @@ import sys
 
 # Parámetros para echar a correr el recibidor
 if len(sys.argv) != 2:
-    print "python receiver.py [PORTNUMBER]"
+    print("python receiver.py [PORTNUMBER]")
 
 SW_IP = ""
 SW_PORT = int(sys.argv[1])
@@ -35,7 +35,7 @@ while True:
         if str(seq) == str(ack):
             downloading_file = open("received_" + file_name,"wb")
             # Mostramos el avance
-            print str(current_size) + " / " + str(total_size) + " (current size / total size), " + str(percent) + "%"
+            print(str(current_size) + " / " + str(total_size) + " (current size / total size), " + str(percent) + "%")
             # Actualizamos el ack
             ack = (ack + 1) % 2
             # Enviamos el ack
@@ -54,7 +54,7 @@ while True:
         try:
             # Si en 10 intentos no funciona, salimos
             if try_counter == 10:
-                print "error"
+                print("error")
                 break
 
             # Obtenemos los datos desde el socket
@@ -70,7 +70,7 @@ while True:
 
             # Si no es lo que esperabamos, descartamos
             if (str(ack) != str(seq)):
-                print "seq is not equal to ack"
+                print("seq is not equal to ack")
                 continue
             # Si es, el socket queda tomado
             can_receive = False
@@ -78,7 +78,7 @@ while True:
         except:
             # Si ocurre un error avisamos y aumentamos el contador
             try_counter += 1
-            print "timed out"
+            print("timed out")
             the_socket.sendto(str(ack),address)
 
 
@@ -91,7 +91,7 @@ while True:
         percent = round(float(current_size) / float(total_size) * 100,2)
         
         # Actualizamos cómo va el envío
-        print str(current_size) + " / " + str(total_size) + " (current size / total size), "  + str(percent) + "%"
+        print (str(current_size) + " / " + str(total_size) + " (current size / total size), "  + str(percent) + "%")
 
         # Enviamos el ack para que el enviador sepa que los datos llegaron
         ack = (ack + 1) % 2
@@ -107,4 +107,4 @@ the_socket.close()
 
 # y, si no fallamos mucho, el archivo fue descargado :D
 if try_counter < 10:
-    print "File Downloaded"
+    print ("File Downloaded")
