@@ -36,7 +36,7 @@ Server_Port = int(sys.argv[2])
 # Establecemos parámetros
 buf = 1024
 address = (Server_IP, Server_Port)
-windows_size = 10
+windows_size = 5
 num_seq = 2*windows_size
 seq = 0
 ack = 0
