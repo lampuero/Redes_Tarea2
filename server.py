@@ -2,6 +2,12 @@
 import socket
 import sys
 
+# Tipos de mensajes
+SYN = 's'
+ACK = 'a'
+FIN = 'f'
+DATOS = 'd'
+
 # Parámetros para echar a correr el recibidor
 if len(sys.argv) != 2:
     print("python3 receiver.py [PORTNUMBER]")

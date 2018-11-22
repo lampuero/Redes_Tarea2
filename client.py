@@ -21,13 +21,20 @@ def karn_algorithm(sample):
 
 # Go back N
 
+# Tipos de mensajes
+SYN = 's'
+ACK = 'a'
+FIN = 'f'
+DATOS = 'd'
+
+
 # Parámetros para echar a correr el enviador
 if len(sys.argv) != 4:
     print("python3 client.py [IPADDRESS] [PORTNUMBER] [FILENAME]")
     sys.exit()
 
 # Armamos el socket
-the_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+the_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Obtenemos el puerto y la IP
 Server_IP = sys.argv[1]
@@ -44,15 +51,13 @@ received_message = ""
 # Obtenemos los parámetros del archivo a enviar
 file_name=sys.argv[3]
 total_size = os.path.getsize(file_name)
-current_size = 0
-percent = round(0, 2)
 
 # Abrimos el archivo
 sending_file = open(file_name,"rb")
 
 # 'Codificamos' el header
-# header = seq + "|||" + ack num + "|||" + "flag SYN" + "|||" + "flag ACK" + "|||" + "flag FIN"
-header = str(seq) + "|||" + str(-1) + "|||" + str(0) + "|||" + str(0) + "|||" + str(0)
+# header = seq + "|||" + ack num + "|||" + "type message"
+header = str(seq) + "|||" + str(-1) + "|||" + str(DATOS)
 data = str(file_name) + "|||" + str(total_size)
 message = header + "&&&" + data
 # header = seq + "|||" + ack num + "|||" + "flag SYN" + "|||" + "flag ACK" + "|||" + "flag FIN"
@@ -103,7 +108,7 @@ while True:
 
     # (**) Actualizamos los parámetros :
     header = str(seq) + "|||" + str(-1) + "|||" + str(0) + "|||" + str(0) + "|||" + str(0)
-    data = sending_file.read(buf-len(header))
+    data = sending_file.read(buf-len(header+"&&&"))
     message = header + "&&&" + data
 
     # Si no hay datos mandamos un string vacío y dejamos de enviar cosas
