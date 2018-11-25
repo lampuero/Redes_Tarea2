@@ -5,7 +5,7 @@ import os
 
 # Parámetros para echar a correr el enviador
 if len(sys.argv) != 4:
-    print "python sender.py [IPADDRESS] [PORTNUMBER] [FILENAME]"
+    print("python sender.py [IPADDRESS] [PORTNUMBER] [FILENAME]")
     sys.exit()
 
 # Armamos el socket
@@ -51,7 +51,7 @@ while True:
         try:
             # Si en 10 intentos no funciona, salimos
             if try_counter == 10:
-                print "error"
+                print("error")
                 break
 
             # Obtenemos la respuesta (estamos esperando un ACK)
@@ -59,19 +59,19 @@ while True:
 
             # Si recibimos lo que esperabamos, actualizamos cómo va el envío
             if (str(ack) == str(seq)):
-                print str(current_size) + " / " + str(total_size) + "(current size / total size), " + str(percent) + "%"
+                print(str(current_size) + " / " + str(total_size) + "(current size / total size), " + str(percent) + "%")
 
                 # y pasamos a actualizar los parametros en (**)
                 break
 
             # Si no, seguimos esperando el ack
             else:
-                print "ack is not equal to seq"
+                print("ack is not equal to seq")
 
         except:
             # Si ocurre un error avisamos y aumentamos el contador
             try_counter += 1
-            print "timed out"
+            print("timed out")
             the_socket.sendto(data,address)
 
     # Si en 10 intentos no funciona, salimos
