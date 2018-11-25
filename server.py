@@ -74,7 +74,7 @@ while True:
 
             # Obtenemos el número de secuencia y los datos
             header, data = message.split("&&&")
-            num_seq, num_ack, flag_SYN, flag_ACK, flag_FIN = header.split("|||")
+            num_seq, num_ack, rtype = header.split("|||")
 
             # Si no es lo que esperabamos, descartamos
             if str(num_seq) != str(expected_seq):
