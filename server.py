@@ -5,6 +5,7 @@ import sys
 # Tipos de mensajes
 SYN = 's'
 ACK = 'a'
+SYNACK = 'k'
 FIN = 'f'
 DATOS = 'd'
 
@@ -24,86 +25,58 @@ the_socket.bind((SW_IP, SW_PORT))
 num_seq = pow(2, 11)
 # Establecemos parámetros
 buf = 1024
-ack = 0
-current_size = 0
-percent = round(0, 2)
-can_receive = True
 expected_seq = 0
 seq = 0
-# Partimos con la secuencia inicial: aquí abrimos el archivo a descargar
-while True:
-    # Recibimos un string con los datos y la dirección del socket que mandó los datos
-    message, address = the_socket.recvfrom(buf)
+last_ack_message = ""
+# Abrimos archivo para guardar datos
+downloading_file = open("received_file", "wb")
 
-    if message:
-        # Separamos los datos recibidos
-        header, data = message.split("&&&")
-        num_seq, num_ack, flag_SYN, flag_ACK, flag_FIN = header.split("|||")
-        file_name, total_size = data.split("|||")
+# Seteamos un timeout
+the_socket.settimeout(1)
 
-        # Si recibimos los datos que esperabamos guardamos el archivo
-        if str(num_seq) == str(expected_seq):
-            downloading_file = open("received_" + file_name, "wb")
-            # Actualizamos el ack
-            expected_seq = (expected_seq + 1) % 10
-            # Enviamos el ack
-            header = str(seq) + "|||" + str(expected_seq) + "|||" + str(0) + "|||" + str(1) + "|||" + str(0)
-            message = header + "&&&" + ""
-            the_socket.sendto(message, address)
-            break
-
-# Seteamos un timeout (bloqueamos el socket después de 0.5s)
-the_socket.settimeout(0.5)
 
 # Contador de intentos
 try_counter = 0
-
+address = b'0'
 # Continuamos con la secuencia de descarga
 while True:
-    if can_receive:
-        try:
-            # Si en 10 intentos no funciona, salimos
-            if try_counter == 10:
-                print("error")
-                break
+    try:
+        # Si en 10 intentos no funciona, salimos
+        if try_counter == 10:
+            print("error")
+            break
 
-            # Obtenemos los datos desde el socket
-            message, address = the_socket.recvfrom(buf)
+        # Obtenemos los datos desde el socket
+        rmessage, address = the_socket.recvfrom(buf)
 
-            # Si no me llegó nada, paramos
-            if not message:
-                break
+        # Si no me llegó nada, paramos
+        if not rmessage:
+            break
 
-            # Obtenemos el número de secuencia y los datos
-            header, data = message.split("&&&")
-            num_seq, num_ack, rtype = header.split("|||")
+        header, data = str(rmessage).split("&&&")
+        rnum_seq, rnum_ack, rtype = header.split("|||")
 
-            # Si no es lo que esperabamos, descartamos
-            if str(num_seq) != str(expected_seq):
-                print("seq is not equal to ack")
-                continue
-            # Si es, el socket queda tomado
-            can_receive = False
-        except:
-            pass
-            # Si ocurre un error avisamos y aumentamos el contador
-            #try_counter += 1
-            #print("timed out")
-            #the_socket.sendto(str(ack), address)
+        # Si no es lo que esperabamos, descartamos
+        if str(rnum_seq) != str(expected_seq):
+            the_socket.sendto(bytes(last_ack_message), address)
+            continue
+        elif str(type) == str(DATOS):
+            downloading_file.write(data)
 
-    if not can_receive:
-        # Escribimos los datos en el archivo que abrimos antes
-        downloading_file.write(data)
+            # Enviamos el ack para que el enviador sepa que los datos llegaron
+            try_counter = 0
+            expected_seq = (expected_seq + 1) % num_seq
+            seq = (seq + 1) % num_seq
+            header = str(seq) + "|||" + str(expected_seq) + "|" + str(ACK)
+            message = header + "&&&" + ""
+            the_socket.sendto(bytes(message), address)
+            last_ack_message = message
+        elif str(type) == str(FIN):
+            break
+    except:
+        try_counter += 1
+        the_socket.sendto(bytes(last_ack_message), address)
 
-        # Enviamos el ack para que el enviador sepa que los datos llegaron
-        try_counter = 0
-        expected_seq = (expected_seq + 1) % 10
-        header = str(seq) + "|||" + str(expected_seq) + "|||" + str(0) + "|||" + str(1) + "|||" + str(0)
-        message = header + "&&&" + ""
-        the_socket.sendto(message, address)
-
-        # Ahora podemos volver a recibir cosas
-        can_receive = True
 
 # Cerramos conexion y archivo
 downloading_file.close()

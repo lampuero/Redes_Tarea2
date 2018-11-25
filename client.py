@@ -25,6 +25,7 @@ def karn_algorithm(sample):
 # Tipos de mensajes
 SYN = 's'
 ACK = 'a'
+SYNACK = 'k'
 FIN = 'f'
 DATOS = 'd'
 
@@ -56,6 +57,7 @@ next_to_send = 0
 overflow = 0
 window_messages = []
 send_file = False
+received_ack = False
 send_times = []
 # Obtenemos los parámetros del archivo a enviar
 file_name = sys.argv[3]
@@ -94,6 +96,7 @@ while not send_file:
         received_header, received_data = str(received_message).split("|||")
         rseq, rack, rtype = received_header.split("|||")
         if str(rtype) == str(ACK):
+            received_ack = True
             while window_start < int(rack) + overflow*num_seq:
                 sample = received_time - send_times[0]
                 del send_times[0]
@@ -104,67 +107,14 @@ while not send_file:
                     overflow = 0
 
     except:
+        if not received_ack:
+            timeout = 2*timeout
         # Si ocurre un error avisamos y aumentamos el contador
         try_counter += 1
         i = 0
         while i < window_size:
             the_socket.sendto(bytes(window_messages[i]), address)
         the_socket.settimeout(timeout)
-
-
-# while True:
-#     # Mandamos los datos donde corresponde
-#     the_socket.sendto(message, address)
-#
-#     # Actualizamos el número de secuencia
-#     seq = (seq + 1) % num_seq
-#
-#     # Seteamos un timeout (bloqueamos el socket después de 0.5s)
-#     the_socket.settimeout(timeout)
-#
-#     # Contador de intentos
-#     try_counter = 0
-#
-#     # Vemos que llegue el ACK
-#     while True:
-#         try:
-#             # Si en 10 intentos no funciona, salimos
-#             if try_counter == 10:
-#                 print("error")
-#                 break
-#
-#             # Obtenemos la respuesta (estamos esperando un ACK)
-#             received_message, address = the_socket.recvfrom(buf)
-#
-#             # Si recibimos lo que esperabamos, actualizamos cómo va el envío
-#             if (str(ack) == str(seq)):
-#
-#                 # y pasamos a actualizar los parametros en (**)
-#                 break
-#
-#             # Si no, seguimos esperando el ack
-#             else:
-#                 print("ack is not equal to seq")
-#
-#         except:
-#             # Si ocurre un error avisamos y aumentamos el contador
-#             try_counter += 1
-#             print("timed out")
-#             the_socket.sendto(message, address)
-#
-#     # Si en 10 intentos no funciona, salimos
-#     if try_counter == 10:
-#         break
-#
-#     # (**) Actualizamos los parámetros :
-#     header = str(seq) + "|||" + str(-1) + "|||" + str(0) + "|||" + str(0) + "|||" + str(0)
-#     data = sending_file.read(buf-len(header+"&&&"))
-#     message = header + "&&&" + data
-#
-#     # Si no hay datos mandamos un string vacío y dejamos de enviar cosas
-#     if not data:
-#         the_socket.sendto("", address)
-#         break
 
 
 # Cerramos conexión y archivo
