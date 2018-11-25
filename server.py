@@ -20,6 +20,8 @@ the_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # Asociamos el socket a la dirección y el puerto especificados
 the_socket.bind((SW_IP, SW_PORT))
 
+# Numero max numeros de sequencia
+num_seq = pow(2, 11)
 # Establecemos parámetros
 buf = 1024
 ack = 0

@@ -45,7 +45,8 @@ Server_Port = int(sys.argv[2])
 buf = 1024
 address = (Server_IP, Server_Port)
 window_size = 5
-num_seq = 2*window_size
+# Numero max numeros de sequencia
+num_seq = pow(2, 11)
 seq = 0
 ack = 0
 received_message = ""
