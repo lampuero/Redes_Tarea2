@@ -62,6 +62,7 @@ while True:
         if str(ack_client) == str(seq):
             break
 
+
 #enviamos datos
 #(...)
 

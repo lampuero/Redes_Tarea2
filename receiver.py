@@ -7,6 +7,7 @@ import sys
 if len(sys.argv) != 2:
     print("python receiver.py [IPADDRESS] [PORTNUMBER]")
 
+
 SW_IP = int(sys.argv[1])
 SW_PORT = int(sys.argv[2])
 # Armamos el socket
@@ -48,14 +49,17 @@ while True:
         # Si recibimos el ACK esperado, enviamos confirmación para terminar 3-way
         if str(ack_serv) == str(ack) and str(syn) == str(syn_serv):
 
+
             # Actualizamos el ack
             ack = int(str(seq_serv)) + 1
 
             #Actualizamos el numero de secuencia
             seq = int(str(ack_serv))
 
+
             # Enviamos el ack y numero de secuencia
             data = str(syn) + "|||" + str(seq)
+
             the_socket.sendto(str(ack),address)
             break
 
@@ -65,3 +69,4 @@ while True:
 
 # Cerramos conexion
 the_socket.close()
+
