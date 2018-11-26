@@ -42,7 +42,9 @@ the_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 Server_IP = sys.argv[1]
 Server_Port = int(sys.argv[2])
 file_name = sys.argv[3]
-three_way = sys.argv[4] == "True"
+three_way = 1
+if sys.argv[4] != "True":
+    three_way = 0
 # Establecemos parámetros
 address = (Server_IP, Server_Port)
 
@@ -91,6 +93,8 @@ while True:
                     message = header + "&&&" + ""
                     seq = (seq + 1) % num_seq
                     the_socket.sendto(bytes(message), address)
+                    send_times.append(datetime.datetime.now())
+                    window_messages.append(message)
                 break
     except:
         try_counter += 1
