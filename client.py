@@ -75,14 +75,12 @@ data = str(three_way)
 message = header.encode() + data.encode()
 seq = (seq + 1) % num_seq
 the_socket.sendto(message, address)
-print("Envio: {}".format(message))
 the_socket.settimeout(timeout)
 # while para handshake
 try_counter = 0
 while True:
     try:
         received_message, address = the_socket.recvfrom(buf)
-        print("LLego1: {}".format(received_message.decode()))
         if received_message:
             # Separamos los datos recibidos
             received_time = datetime.datetime.now()
@@ -97,7 +95,6 @@ while True:
                     window_start = seq
                     seq = (seq + 1) % num_seq
                     the_socket.sendto(message, address)
-                    print("Envio: {}".format(message))
                     send_times.append(datetime.datetime.now())
                     window_messages.append(message)
                 break
@@ -115,7 +112,6 @@ finished_reading = False
 finished_sending = False
 
 # Envio el nombre
-header = str(seq) + "|||" + str(-1) + "|||" + str(DATOS)
 header = "{:04}|{:04}|{}".format(seq, -1, DATOS)
 data = str(file_name)
 message = header.encode() + data.encode()
@@ -132,15 +128,12 @@ while not finished_sending:
             print("Error: espera en el envio de archivo")
             break
         received_message, address = the_socket.recvfrom(buf)
-        print("LLego2: {}".format(received_message.decode()))
-
         received_time = datetime.datetime.now()
         received_header = received_message[:11].decode()
         received_data = received_message[11:]
         rSeq, rAck, rType = received_header.split("|")
         if rType == ACK:
             received_ack = True
-            print("llego ack")
             while window_start < int(rAck) + overflow*num_seq:
                 sample = received_time - send_times[0]
                 del send_times[0], window_messages[0]
@@ -149,8 +142,6 @@ while not finished_sending:
                     overflow = 0
                 if window_start == int(rAck):
                     karn_algorithm(sample.total_seconds())
-            print(f'largo ventana es:  {len(window_messages)}')
-            print(finished_reading and len(window_messages) == 0)
             if finished_reading and len(window_messages) == 0:
                 finished_sending = True
                 break
@@ -167,19 +158,15 @@ while not finished_sending:
 
     while (not finished_reading) and len(window_messages) < window_size:
         header = "{:04}|{:04}|{}".format(seq, -1, DATOS)
-        print(f"Largo header es: {len(header)}")
         data = sending_file.read(buf - len(header))
         if not data:
             finished_reading = True
-            print("llego fin archivo")
-            print(window_messages[-1])
             break
         message = header.encode() + data
         the_socket.sendto(message, address)
         the_socket.settimeout(timeout)
         send_times.append(datetime.datetime.now())
         window_messages.append(message)
-        print("Envio1 header: {}".format(header))
         if seq == num_seq:
             overflow = 1
         seq = (seq + 1) % num_seq
@@ -203,11 +190,13 @@ while True:
         rSeq, rAck, rType = received_header.split("|")
         if str(rType) == str(ACK) and int(rAck) == int(seq):
             break
-    except Exception as e:
-        print("Excepcion es: {}".format(e))
+    except socket.timeout:
         try_counter += 1
         the_socket.sendto(message, address)
         the_socket.settimeout(timeout)
+    except Exception as e:
+        print("Excepcion1 es: {}".format(e))
+
 # espero fin para enviar ack
 while True:
     try:
@@ -216,7 +205,8 @@ while True:
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
-        received_header, received_data = received_message.decode().split("&&&")
+        received_header = received_message[:11].decode()
+        received_data = received_message[11:]
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(FIN):
             ack = (int(rSeq) + 1) % num_seq
@@ -224,11 +214,13 @@ while True:
             message = header.encode() + b''
             the_socket.sendto(message, address)
             break
-    except Exception as e:
-        print("Excepcion es: {}".format(e))
+    except socket.timeout:
         try_counter += 1
         the_socket.sendto(message, address)
         the_socket.settimeout(timeout)
+    except Exception as e:
+        print("Excepcion2 es: {}".format(e))
+
 # poner reloj al principio y al final e imprimir
 # Cerramos conexión y archivo
 the_socket.close()

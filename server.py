@@ -28,8 +28,7 @@ num_seq = pow(2, 11)
 buf = 1024
 expected_seq = 0
 seq = 0
-# Abrimos archivo para guardar datos
-downloading_file = open("received_file.txt", "wb")
+
 
 # Contador de intentos
 try_counter = 0
@@ -44,7 +43,6 @@ while True:
         header = rmessage[:11].decode()
         data = rmessage[11:]
         rSeq, rAck, rType = header.split("|")
-        print("LLego1: {}".format(rmessage))
         if str(rType) == str(SYN):
             ack = (int(rSeq) + 1) % num_seq
             header = "{:04}|{:04}|{}".format(seq, ack, SYNACK)
@@ -52,14 +50,12 @@ while True:
             seq = (seq + 1) % num_seq
             expected_seq = (int(rSeq) + 1) % num_seq
             the_socket.sendto(message, address)
-            print("Envio: {}".format(message))
             three_way = int(data)
             break
 
 while three_way == 1:
     try:
         rmessage, address = the_socket.recvfrom(buf)
-        print("LLego2: {}".format(rmessage))
         if rmessage:
             header = rmessage[:11].decode()
             data = rmessage[11:]
@@ -74,9 +70,11 @@ while three_way == 1:
 
 # Descarga
 
+
 # Seteamos un timeout
 the_socket.settimeout(1)
 
+filename = ".txt"
 # recibo nombre archivo
 while True:
     try:
@@ -86,7 +84,6 @@ while True:
             break
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
-        print("LLego3: {}".format(rmessage))
         if rmessage:
             header = rmessage[:11].decode()
             data = rmessage[11:]
@@ -96,21 +93,23 @@ while True:
                 the_socket.sendto(message, address)
                 continue
             elif str(rType) == str(DATOS):
-                downloading_file.close()
-                downloading_file = open("received_" + data.decode(), "wb")
+                filename = data.decode()
                 ack = (int(rSeq) + 1) % num_seq
                 header = "{:04}|{:04}|{}".format(seq, ack, ACK)
                 message = header.encode() + b''
                 seq = (seq + 1) % num_seq
                 expected_seq = (expected_seq + 1) % num_seq
                 the_socket.sendto(message, address)
-                print("Envio1: {}".format(message))
                 break
             try_counter = 0
     except Exception as e:
         print(e)
         try_counter += 1
         the_socket.sendto(message, address)
+
+# Abrimos archivo para guardar datos
+downloading_file = open("received_" + filename, "wb")
+
 # Descarga archivo
 try_counter = 0
 while True:
@@ -125,9 +124,7 @@ while True:
         if rmessage:
             header = rmessage[:11].decode()
             data = rmessage[11:]
-            print("LLego4: este header {}".format(header))
             rSeq, rAck, rType = header.split("|")
-            print("Llego {} y espero {}".format(rSeq, expected_seq))
             # Si no es lo que esperabamos, descartamos
             if int(rSeq) != int(expected_seq):
                 the_socket.sendto(message, address)
@@ -155,13 +152,14 @@ while True:
         print(e)
         try_counter += 1
         the_socket.sendto(message, address)
-        print("Envio2: {}".format(message))
 
 # Finalizar conexion
 end_conection = [message]
+print(f'envie {message}')
 header = "{:04}|{:04}|{}".format(seq, -1, FIN)
 message = header.encode() + b''
 the_socket.sendto(message, address)
+print(f'envio ahora {message}')
 seq = (seq + 1) % num_seq
 end_conection.append(message)
 while True:
@@ -179,7 +177,8 @@ while True:
             rSeq, rAck, rType = header.split("|")
             # Si no es lo que esperabamos, descartamos
             if int(rSeq) != int(expected_seq):
-                the_socket.sendto(message, address)
+                for msg in end_conection:
+                    the_socket.sendto(msg, address)
                 continue
             elif str(rType) == str(ACK):
                 break
