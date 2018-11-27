@@ -44,11 +44,11 @@ while True:
         rSeq, rAck, rType = header.split("|||")
         print("LLego1: {}".format(rmessage.decode()))
         if str(rType) == str(SYN):
-            print("llego aca")
             ack = (int(rSeq) + 1) % num_seq
             header = str(seq) + "|||" + str(ack) + "|||" + str(SYNACK)
             message = header + "&&&" + ""
             seq = (seq + 1) % num_seq
+            expected_seq = (int(rSeq) + 1) % num_seq
             the_socket.sendto(message.encode(), address)
             print("Envio: {}".format(message))
             three_way = int(data)
@@ -61,7 +61,8 @@ while three_way == 1:
         if rmessage:
             header, data = rmessage.decode().split("&&&")
             rSeq, rAck, rType = header.split("|||")
-            if str(rType) == str(ACK) and int(rAck) == int(seq):
+            if int(rSeq) == expected_seq and str(rType) == str(ACK) and int(rAck) == int(seq):
+                expected_seq = (expected_seq + 1) % num_seq
                 break
     except:
         try_counter += 1
@@ -70,63 +71,64 @@ while three_way == 1:
 # Descarga
 
 # Seteamos un timeout
-the_socket.settimeout(1)
+# the_socket.settimeout(1)
 
 # recibo nombre archivo
 while True:
     try:
         # Si en 10 intentos no funciona, salimos
         if try_counter == 10:
-            print("error")
+            print("Error: Alcanzado maximos intentos al recibir nombre archivo")
             break
-
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
         print("LLego3: {}".format(rmessage.decode()))
         if rmessage:
             header, data = rmessage.decode().split("&&&")
-            rnum_seq, rnum_ack, rtype = header.split("|||")
-
-            # Si no es lo que esperabamos, descartamos
-            if int(rnum_seq) != int(expected_seq):
-                the_socket.sendto(message.encode(), address)
-                continue
-            elif str(type) == str(DATOS):
-                downloading_file.close()
-                downloading_file = open("received_" + str(data), "wb")
-                expected_seq = (expected_seq + 1) % num_seq
-                seq = (seq + 1) % num_seq
-                header = str(seq) + "|||" + str(expected_seq) + "|" + str(ACK)
-                message = header + "&&&" + ""
-                the_socket.sendto(message.encode(), address)
-            try_counter = 0
-    except:
-        try_counter += 1
-        the_socket.sendto(message.encode(), address)
-
-while True:
-    try:
-        # Si en 10 intentos no funciona, salimos
-        if try_counter == 10:
-            print("error")
-            break
-
-        # Obtenemos los datos desde el socket
-        rmessage, address = the_socket.recvfrom(buf)
-        print("LLego: {}".format(rmessage.decode()))
-        if rmessage:
-            header, data = rmessage.decode().split("&&&")
             rSeq, rAck, rType = header.split("|||")
-
             # Si no es lo que esperabamos, descartamos
             if int(rSeq) != int(expected_seq):
                 the_socket.sendto(message.encode(), address)
                 continue
             elif str(rType) == str(DATOS):
-                downloading_file.write(data)
+                downloading_file.close()
+                downloading_file = open("received_" + str(data), "wb")
+                expected_seq = (expected_seq + 1) % num_seq
+                header = str(seq) + "|||" + str(expected_seq) + "|||" + str(ACK)
+                message = header + "&&&" + ""
+                seq = (seq + 1) % num_seq
+                the_socket.sendto(message.encode(), address)
+                print("Envio1: {}".format(message))
+                break
+            try_counter = 0
+    except:
+        try_counter += 1
+        the_socket.sendto(message.encode(), address)
+# Descarga archivo
+try_counter = 0
+while True:
+    try:
+        # Si en 10 intentos no funciona, salimos
+        if try_counter == 10:
+            print("Error: Alcanzado maximos intentos al recibir datos de archivo")
+            break
+
+        # Obtenemos los datos desde el socket
+        rmessage, address = the_socket.recvfrom(buf)
+        if rmessage:
+            header, data = rmessage.decode().split("&&&")
+            print("LLego4: este header {}".format(header))
+            rSeq, rAck, rType = header.split("|||")
+            print("Llego {} y espero {}".format(rSeq, expected_seq))
+            # Si no es lo que esperabamos, descartamos
+            if int(rSeq) != int(expected_seq):
+                the_socket.sendto(message.encode(), address)
+                continue
+            elif str(rType) == str(DATOS):
+                downloading_file.write(data.encode())
                 expected_seq = (expected_seq + 1) % num_seq
                 seq = (seq + 1) % num_seq
-                header = str(seq) + "|||" + str(expected_seq) + "|" + str(ACK)
+                header = str(seq) + "|||" + str(expected_seq) + "|||" + str(ACK)
                 message = header + "&&&" + ""
                 the_socket.sendto(message.encode(), address)
             elif str(rType) == str(FIN):
@@ -137,9 +139,11 @@ while True:
                 the_socket.sendto(message.encode(), address)
                 break
             try_counter = 0
-    except:
+    except Exception as e:
+        print(e)
         try_counter += 1
         the_socket.sendto(message.encode(), address)
+        print("Envio2: {}".format(message))
 
 # Finalizar conexion
 end_conection = [message]
@@ -151,11 +155,11 @@ while True:
     try:
         # Si en 10 intentos no funciona, salimos
         if try_counter == 10:
-            print("error")
+            print("Error: Alcanzado maximos intentos al esperar ACK de FIN")
             break
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
-        print("LLego: {}".format(rmessage.decode()))
+        print("LLego5: {}".format(rmessage.decode()))
         if rmessage:
             header, data = rmessage.decode().split("&&&")
             rSeq, rAck, rType = header.split("|||")
@@ -170,8 +174,8 @@ while True:
     except:
         try_counter += 1
         i = 0
-        while i < end_conection:
-            the_socket.sendto(end_conection[i].encode(), address)
+        for msg in end_conection:
+            the_socket.sendto(msg.encode(), address)
             i += 1
 # Cerramos conexion y archivo
 downloading_file.close()

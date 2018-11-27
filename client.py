@@ -82,22 +82,21 @@ try_counter = 0
 while True:
     try:
         received_message, address = the_socket.recvfrom(buf)
-        print("LLego: {}".format(received_message.decode()))
+        print("LLego1: {}".format(received_message.decode()))
         if received_message:
-            print("llego aca")
             # Separamos los datos recibidos
             received_time = datetime.datetime.now()
             received_header, received_data = received_message.decode().split("&&&")
             rSeq, rAck, rType = received_header.split("|||")
-            print(str(rType) == str(SYNACK))
-            print(int(seq) == int(rAck))
             if str(rType) == str(SYNACK) and int(seq) == int(rAck):
                 if three_way == 1:
                     ack = (int(rSeq) + 1) % num_seq
                     header = str(seq) + "|||" + str(ack) + "|||" + str(ACK)
                     message = header + "&&&" + ""
+                    window_start = seq
                     seq = (seq + 1) % num_seq
                     the_socket.sendto(message.encode(), address)
+                    print("Envio: {}".format(message))
                     send_times.append(datetime.datetime.now())
                     window_messages.append(message)
                 break
@@ -117,37 +116,29 @@ finished_sending = False
 header = str(seq) + "|||" + str(-1) + "|||" + str(DATOS)
 data = str(file_name)
 message = header + "&&&" + data
+seq = (seq + 1) % num_seq
 the_socket.sendto(message.encode(), address)
+
 the_socket.settimeout(timeout)
 send_times.append(datetime.datetime.now())
 window_messages.append(message)
 
-while not send_file:
-    while (not finished_reading) and len(window_messages) < window_size:
-        header = str(seq) + "|||" + str(-1) + str(DATOS)
-        data = sending_file.read(buf - len(header + "&&&"))
-        if not data:
-            finished_reading = True
-            break
-        message = header + "&&&" + str(data)
-        the_socket.sendto(message.encode(), address)
-        the_socket.settimeout(timeout)
-        send_times.append(datetime.datetime.now())
-        window_messages.append(message)
-        if seq == num_seq:
-            overflow = 1
-        seq = (seq + 1) % num_seq
-
+while not finished_sending:
     try:
         if try_counter == 10:
-            print("error")
+            print("Error: espera en el envio de archivo")
             break
         received_message, address = the_socket.recvfrom(buf)
+        print("LLego2: {}".format(received_message.decode()))
+
         received_time = datetime.datetime.now()
         received_header, received_data = received_message.decode().split("&&&")
         rSeq, rAck, rType = received_header.split("|||")
-        if str(rType) == str(ACK):
+        print("llego tipo {}".format(rType))
+        print(rType == ACK)
+        if rType == ACK:
             received_ack = True
+            print("llego ack")
             while window_start < int(rAck) + overflow*num_seq:
                 sample = received_time - send_times[0]
                 del send_times[0], window_messages[0]
@@ -170,6 +161,26 @@ while not send_file:
             i += 1
         the_socket.settimeout(timeout)
 
+    while (not finished_reading) and len(window_messages) < window_size:
+        print("llego aca")
+        print(len(window_messages))
+        header = str(seq) + "|||" + str(-1) + "|||" + str(DATOS)
+        data = sending_file.read(buf - len(header + "&&&"))
+        if not data:
+            finished_reading = True
+            break
+        message = header + "&&&" + data.decode()
+        print(len(message))
+        print(len(message.encode()))
+        the_socket.sendto(message.encode(), address)
+        the_socket.settimeout(timeout)
+        send_times.append(datetime.datetime.now())
+        window_messages.append(message)
+        print("Envio1 header: {}".format(header))
+        if seq == num_seq:
+            overflow = 1
+        seq = (seq + 1) % num_seq
+
 # Fin de conexion
 header = str(seq) + "|||" + str(-1) + "|||" + str(FIN)
 message = header + "&&&" + ""
@@ -179,7 +190,7 @@ the_socket.settimeout(timeout)
 while True:
     try:
         if try_counter == 10:
-            print("error")
+            print("Error: espera de ack para fin")
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
@@ -195,7 +206,7 @@ while True:
 while True:
     try:
         if try_counter == 10:
-            print("error")
+            print("Error: espera de fin de servidor para ack")
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
