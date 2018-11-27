@@ -75,22 +75,26 @@ data = str(three_way)
 message = header + "&&&" + data
 seq = (seq + 1) % num_seq
 the_socket.sendto(message.encode(), address)
+print("Envio: {}".format(message))
 the_socket.settimeout(timeout)
 # while para handshake
 try_counter = 0
 while True:
     try:
         received_message, address = the_socket.recvfrom(buf)
+        print("LLego: {}".format(received_message.decode()))
         if received_message:
+            print("llego aca")
             # Separamos los datos recibidos
             received_time = datetime.datetime.now()
-            received_header, received_data = received_message.decode().split("|||")
+            received_header, received_data = received_message.decode().split("&&&")
             rSeq, rAck, rType = received_header.split("|||")
-
+            print(str(rType) == str(SYNACK))
+            print(int(seq) == int(rAck))
             if str(rType) == str(SYNACK) and int(seq) == int(rAck):
-                if three_way:
+                if three_way == 1:
                     ack = (int(rSeq) + 1) % num_seq
-                    header = str(seq) + "|||" + str(ack) + "|||" + str(SYNACK)
+                    header = str(seq) + "|||" + str(ack) + "|||" + str(ACK)
                     message = header + "&&&" + ""
                     seq = (seq + 1) % num_seq
                     the_socket.sendto(message.encode(), address)
@@ -140,7 +144,7 @@ while not send_file:
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
-        received_header, received_data = received_message.decode().split("|||")
+        received_header, received_data = received_message.decode().split("&&&")
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(ACK):
             received_ack = True
@@ -179,7 +183,7 @@ while True:
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
-        received_header, received_data = received_message.decode().split("|||")
+        received_header, received_data = received_message.decode().split("&&&")
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(ACK) and int(rAck) == int(seq):
             break
@@ -195,7 +199,7 @@ while True:
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
-        received_header, received_data = received_message.decode().split("|||")
+        received_header, received_data = received_message.decode().split("&&&")
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(FIN):
             ack = (int(rSeq) + 1) % num_seq
@@ -215,4 +219,4 @@ sending_file.close()
 # tiempo de inicio
 end_time = datetime.datetime.now()
 delta = end_time - start_time
-print("El tiempo de duracion es %i segundos", delta.total_seconds())
+print("El tiempo de duracion es {} segundos".format(delta.total_seconds()))

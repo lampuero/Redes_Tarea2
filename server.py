@@ -36,30 +36,33 @@ address = ("", 0)
 message = ""
 # Conexion
 send_SYNACK = False
-# while para three-way handshake
+three_way = 1
 while True:
+    rmessage, address = the_socket.recvfrom(buf)
+    if rmessage:
+        header, data = rmessage.decode().split("&&&")
+        rSeq, rAck, rType = header.split("|||")
+        print("LLego1: {}".format(rmessage.decode()))
+        if str(rType) == str(SYN):
+            print("llego aca")
+            ack = (int(rSeq) + 1) % num_seq
+            header = str(seq) + "|||" + str(ack) + "|||" + str(SYNACK)
+            message = header + "&&&" + ""
+            seq = (seq + 1) % num_seq
+            the_socket.sendto(message.encode(), address)
+            print("Envio: {}".format(message))
+            three_way = int(data)
+            break
+
+while three_way == 1:
     try:
         rmessage, address = the_socket.recvfrom(buf)
-
+        print("LLego2: {}".format(rmessage.decode()))
         if rmessage:
             header, data = rmessage.decode().split("&&&")
             rSeq, rAck, rType = header.split("|||")
-            if str(rType) == str(SYN):
-                if send_SYNACK:
-                    the_socket.sendto(message.encode(), address)
-                    continue
-                ack = (int(rSeq) + 1) % num_seq
-                header = str(seq) + "|||" + str(ack) + str(SYNACK)
-                message = header + "&&&" + ""
-                seq = (seq + 1) % num_seq
-                the_socket.sendto(message.encode(), address)
-                send_SYNACK = True
-                three_way = int(data)
-                if three_way != 1:
-                    break
-            elif str(rType) == str(ACK) and send_SYNACK:
-                if int(rAck) == int(seq):
-                    break
+            if str(rType) == str(ACK) and int(rAck) == int(seq):
+                break
     except:
         try_counter += 1
         the_socket.sendto(message.encode(), address)
@@ -79,7 +82,7 @@ while True:
 
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
-
+        print("LLego3: {}".format(rmessage.decode()))
         if rmessage:
             header, data = rmessage.decode().split("&&&")
             rnum_seq, rnum_ack, rtype = header.split("|||")
@@ -110,7 +113,7 @@ while True:
 
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
-
+        print("LLego: {}".format(rmessage.decode()))
         if rmessage:
             header, data = rmessage.decode().split("&&&")
             rSeq, rAck, rType = header.split("|||")
@@ -152,7 +155,7 @@ while True:
             break
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
-
+        print("LLego: {}".format(rmessage.decode()))
         if rmessage:
             header, data = rmessage.decode().split("&&&")
             rSeq, rAck, rType = header.split("|||")
