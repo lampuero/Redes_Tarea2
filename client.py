@@ -135,8 +135,6 @@ while not finished_sending:
         received_time = datetime.datetime.now()
         received_header, received_data = received_message.decode().split("&&&")
         rSeq, rAck, rType = received_header.split("|||")
-        print("llego tipo {}".format(rType))
-        print(rType == ACK)
         if rType == ACK:
             received_ack = True
             print("llego ack")
@@ -152,7 +150,7 @@ while not finished_sending:
                 finished_sending = True
         try_counter = 0
     except Exception as e:
-        print(e)
+        print("Excepcion es: {}".format(e))
         if not received_ack:
             timeout = 2*timeout
         # Si ocurre un error avisamos y aumentamos el contador
@@ -164,17 +162,18 @@ while not finished_sending:
         the_socket.settimeout(timeout)
 
     while (not finished_reading) and len(window_messages) < window_size:
-        print("llego aca")
-        print(len(window_messages))
-        header = str(seq) + "|||" + str(-1) + "|||" + str(DATOS)
-        data = sending_file.read(buf - len(header + "&&&"))
+        header = "{:04}|{:04}|{}".format(seq, -1, DATOS)
+        print(f"Largo header es: {len(header)}")
+        data = sending_file.read(buf - len(header))
         if not data:
             finished_reading = True
+            print("llego fin archivo")
+            print(window_messages[-1])
+            print(data)
+            print(sending_file.read())
             break
-        message = header + "&&&" + data.decode()
-        print(len(message))
-        print(len(message.encode()))
-        the_socket.sendto(message.encode(), address)
+        message = header.encode() + "&&&".encode() + data
+        the_socket.sendto(message, address)
         the_socket.settimeout(timeout)
         send_times.append(datetime.datetime.now())
         window_messages.append(message)
@@ -201,7 +200,7 @@ while True:
         if str(rType) == str(ACK) and int(rAck) == int(seq):
             break
     except Exception as e:
-        print(e)
+        print("Excepcion es: {}".format(e))
         try_counter += 1
         the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
@@ -222,7 +221,7 @@ while True:
             the_socket.sendto(message.encode(), address)
             break
     except Exception as e:
-        print(e)
+        print("Excepcion es: {}".format(e))
         try_counter += 1
         the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
