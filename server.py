@@ -73,7 +73,7 @@ while three_way == 1:
 # Descarga
 
 # Seteamos un timeout
-# the_socket.settimeout(1)
+the_socket.settimeout(1)
 
 # recibo nombre archivo
 while True:
