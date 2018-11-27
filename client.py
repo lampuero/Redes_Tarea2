@@ -67,7 +67,8 @@ overflow = 0
 
 send_file = False
 received_ack = False
-
+# tiempo de inicio
+start_time = datetime.datetime.now()
 # Conexion
 header = str(seq) + "|||" + str(-1) + "|||" + str(SYN)
 data = str(three_way)
@@ -162,10 +163,56 @@ while not send_file:
         i = 0
         while i < window_size:
             the_socket.sendto(bytes(window_messages[i]), address)
+            i += 1
         the_socket.settimeout(timeout)
 
 # Fin de conexion
-
+header = str(seq) + "|||" + str(-1) + "|||" + str(FIN)
+message = header + "&&&" + ""
+the_socket.sendto(bytes(message), address)
+the_socket.settimeout(timeout)
+# espero ack de fin
+while True:
+    try:
+        if try_counter == 10:
+            print("error")
+            break
+        received_message, address = the_socket.recvfrom(buf)
+        received_time = datetime.datetime.now()
+        received_header, received_data = str(received_message).split("|||")
+        rSeq, rAck, rType = received_header.split("|||")
+        if str(rType) == str(ACK) and int(rAck) == int(seq):
+            break
+    except:
+        try_counter += 1
+        the_socket.sendto(bytes(message), address)
+        the_socket.settimeout(timeout)
+# espero fin para enviar ack
+while True:
+    try:
+        if try_counter == 10:
+            print("error")
+            break
+        received_message, address = the_socket.recvfrom(buf)
+        received_time = datetime.datetime.now()
+        received_header, received_data = str(received_message).split("|||")
+        rSeq, rAck, rType = received_header.split("|||")
+        if str(rType) == str(FIN):
+            ack = (int(rSeq) + 1) % num_seq
+            header = str(seq) + "|||" + str(ack) + "|||" + str(ACK)
+            message = header + "&&&" + ""
+            the_socket.sendto(bytes(message), address)
+            break
+    except:
+        try_counter += 1
+        the_socket.sendto(bytes(message), address)
+        the_socket.settimeout(timeout)
+# poner reloj al principio y al final e imprimir
 # Cerramos conexión y archivo
 the_socket.close()
 sending_file.close()
+
+# tiempo de inicio
+end_time = datetime.datetime.now()
+delta = end_time - start_time
+print("El tiempo de duracion es %i segundos", delta.total_seconds())
