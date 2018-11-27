@@ -9,3 +9,4 @@ Tarea 2 de Redes
 `python3 client.py [IPADDRESS] [PORTNUMBER] [FILENAME] [3-WAY HANDSHAKE]`
 donde la mayoria de lso terminos se explican solos excepto `[3-WAY HANDSHAKE]` que corresponde a un `True` o un `False` dependiendo de si se quiere usar 3-way handshake o no.
 - El cliente le comunica al servidor si se ocupa 3-way handshake con un parametro que se envia como un dato en el mensaje de SYN.
+- El servidor setea su timeout a 1s cuando recibe el primer mensaje SYN.
