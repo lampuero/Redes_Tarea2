@@ -74,7 +74,7 @@ header = str(seq) + "|||" + str(-1) + "|||" + str(SYN)
 data = str(three_way)
 message = header + "&&&" + data
 seq = (seq + 1) % num_seq
-the_socket.sendto(bytes(message), address)
+the_socket.sendto(message.encode(), address)
 the_socket.settimeout(timeout)
 # while para handshake
 try_counter = 0
@@ -84,7 +84,7 @@ while True:
         if received_message:
             # Separamos los datos recibidos
             received_time = datetime.datetime.now()
-            received_header, received_data = str(received_message).split("|||")
+            received_header, received_data = received_message.decode().split("|||")
             rSeq, rAck, rType = received_header.split("|||")
 
             if str(rType) == str(SYNACK) and int(seq) == int(rAck):
@@ -93,19 +93,19 @@ while True:
                     header = str(seq) + "|||" + str(ack) + "|||" + str(SYNACK)
                     message = header + "&&&" + ""
                     seq = (seq + 1) % num_seq
-                    the_socket.sendto(bytes(message), address)
+                    the_socket.sendto(message.encode(), address)
                     send_times.append(datetime.datetime.now())
                     window_messages.append(message)
                 break
     except:
         try_counter += 1
-        the_socket.sendto(bytes(message), address)
+        the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
 
 # Envio de Datos
 
 # Abrimos el archivo
-sending_file = open(file_name,"rb")
+sending_file = open(file_name, "rb")
 finished_reading = False
 finished_sending = False
 
@@ -113,13 +113,12 @@ finished_sending = False
 header = str(seq) + "|||" + str(-1) + "|||" + str(DATOS)
 data = str(file_name)
 message = header + "&&&" + data
-the_socket.sendto(bytes(message), address)
+the_socket.sendto(message.encode(), address)
 the_socket.settimeout(timeout)
 send_times.append(datetime.datetime.now())
 window_messages.append(message)
 
 while not send_file:
-    try_counter = 0
     while (not finished_reading) and len(window_messages) < window_size:
         header = str(seq) + "|||" + str(-1) + str(DATOS)
         data = sending_file.read(buf - len(header + "&&&"))
@@ -127,7 +126,7 @@ while not send_file:
             finished_reading = True
             break
         message = header + "&&&" + str(data)
-        the_socket.sendto(bytes(message), address)
+        the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
         send_times.append(datetime.datetime.now())
         window_messages.append(message)
@@ -141,7 +140,7 @@ while not send_file:
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
-        received_header, received_data = str(received_message).split("|||")
+        received_header, received_data = received_message.decode().split("|||")
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(ACK):
             received_ack = True
@@ -155,6 +154,7 @@ while not send_file:
                     karn_algorithm(sample.total_seconds())
             if finished_reading and len(window_messages) == 0:
                 finished_sending = True
+        try_counter = 0
     except:
         if not received_ack:
             timeout = 2*timeout
@@ -162,14 +162,14 @@ while not send_file:
         try_counter += 1
         i = 0
         while i < window_size:
-            the_socket.sendto(bytes(window_messages[i]), address)
+            the_socket.sendto(window_messages[i].encode(), address)
             i += 1
         the_socket.settimeout(timeout)
 
 # Fin de conexion
 header = str(seq) + "|||" + str(-1) + "|||" + str(FIN)
 message = header + "&&&" + ""
-the_socket.sendto(bytes(message), address)
+the_socket.sendto(message.encode(), address)
 the_socket.settimeout(timeout)
 # espero ack de fin
 while True:
@@ -179,13 +179,13 @@ while True:
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
-        received_header, received_data = str(received_message).split("|||")
+        received_header, received_data = received_message.decode().split("|||")
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(ACK) and int(rAck) == int(seq):
             break
     except:
         try_counter += 1
-        the_socket.sendto(bytes(message), address)
+        the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
 # espero fin para enviar ack
 while True:
@@ -195,17 +195,17 @@ while True:
             break
         received_message, address = the_socket.recvfrom(buf)
         received_time = datetime.datetime.now()
-        received_header, received_data = str(received_message).split("|||")
+        received_header, received_data = received_message.decode().split("|||")
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(FIN):
             ack = (int(rSeq) + 1) % num_seq
             header = str(seq) + "|||" + str(ack) + "|||" + str(ACK)
             message = header + "&&&" + ""
-            the_socket.sendto(bytes(message), address)
+            the_socket.sendto(message.encode(), address)
             break
     except:
         try_counter += 1
-        the_socket.sendto(bytes(message), address)
+        the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
 # poner reloj al principio y al final e imprimir
 # Cerramos conexión y archivo
