@@ -11,7 +11,8 @@ DATOS = 'd'
 
 # Parámetros para echar a correr el recibidor
 if len(sys.argv) != 2:
-    print("python3 receiver.py [PORTNUMBER]")
+    print("python3 server.py [PORTNUMBER]")
+    sys.exit()
 
 SW_IP = ""
 SW_PORT = int(sys.argv[1])
