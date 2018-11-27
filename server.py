@@ -64,7 +64,8 @@ while three_way == 1:
             if int(rSeq) == expected_seq and str(rType) == str(ACK) and int(rAck) == int(seq):
                 expected_seq = (expected_seq + 1) % num_seq
                 break
-    except:
+    except Exception as e:
+        print(e)
         try_counter += 1
         the_socket.sendto(message.encode(), address)
 
@@ -101,7 +102,8 @@ while True:
                 print("Envio1: {}".format(message))
                 break
             try_counter = 0
-    except:
+    except Exception as e:
+        print(e)
         try_counter += 1
         the_socket.sendto(message.encode(), address)
 # Descarga archivo
@@ -171,7 +173,8 @@ while True:
             elif str(rType) == str(ACK):
                 break
             try_counter = 0
-    except:
+    except Exception as e:
+        print(e)
         try_counter += 1
         i = 0
         for msg in end_conection:

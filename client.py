@@ -100,7 +100,8 @@ while True:
                     send_times.append(datetime.datetime.now())
                     window_messages.append(message)
                 break
-    except:
+    except Exception as e:
+        print(e)
         try_counter += 1
         the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
@@ -150,7 +151,8 @@ while not finished_sending:
             if finished_reading and len(window_messages) == 0:
                 finished_sending = True
         try_counter = 0
-    except:
+    except Exception as e:
+        print(e)
         if not received_ack:
             timeout = 2*timeout
         # Si ocurre un error avisamos y aumentamos el contador
@@ -198,7 +200,8 @@ while True:
         rSeq, rAck, rType = received_header.split("|||")
         if str(rType) == str(ACK) and int(rAck) == int(seq):
             break
-    except:
+    except Exception as e:
+        print(e)
         try_counter += 1
         the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
@@ -218,7 +221,8 @@ while True:
             message = header + "&&&" + ""
             the_socket.sendto(message.encode(), address)
             break
-    except:
+    except Exception as e:
+        print(e)
         try_counter += 1
         the_socket.sendto(message.encode(), address)
         the_socket.settimeout(timeout)
