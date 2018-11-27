@@ -97,7 +97,7 @@ while True:
                 continue
             elif str(rType) == str(DATOS):
                 downloading_file.close()
-                downloading_file = open("received_" + str(data), "wb")
+                downloading_file = open("received_" + data.decode(), "wb")
                 ack = (int(rSeq) + 1) % num_seq
                 header = "{:04}|{:04}|{}".format(seq, ack, ACK)
                 message = header.encode() + b''
