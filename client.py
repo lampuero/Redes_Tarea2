@@ -114,6 +114,8 @@ finished_sending = False
 header = "{:04}|{:04}|{}".format(seq, -1, DATOS)
 data = str(file_name)
 message = header.encode() + data.encode()
+if three_way != 1:
+    window_start = seq
 seq = (seq + 1) % num_seq
 the_socket.sendto(message, address)
 
