@@ -56,8 +56,7 @@ window_start = 0
 window_messages = []
 send_times = []
 
-last_send = -1
-next_to_send = 0
+last_retransmit = -1
 
 seq = 0
 ack = 0
@@ -140,8 +139,9 @@ while not finished_sending:
                 window_start = (window_start + 1) % num_seq
                 if window_start == 0:
                     overflow = 0
-                if window_start == int(rAck):
+                if window_start == int(rAck) and last_retransmit <= window_start:
                     karn_algorithm(sample.total_seconds())
+                    last_retransmit = -1
             if finished_reading and len(window_messages) == 0:
                 finished_sending = True
                 break
@@ -155,6 +155,7 @@ while not finished_sending:
         for msg in window_messages:
             the_socket.sendto(msg, address)
         the_socket.settimeout(timeout)
+        last_retransmit = seq
 
     while (not finished_reading) and len(window_messages) < window_size:
         header = "{:04}|{:04}|{}".format(seq, -1, DATOS)
@@ -195,7 +196,7 @@ while True:
         the_socket.sendto(message, address)
         the_socket.settimeout(timeout)
     except Exception as e:
-        print("Excepcion1 es: {}".format(e))
+        print("Excepcion es: {}".format(e))
 
 # espero fin para enviar ack
 while True:
@@ -220,7 +221,7 @@ while True:
         the_socket.sendto(message, address)
         the_socket.settimeout(timeout)
     except Exception as e:
-        print("Excepcion2 es: {}".format(e))
+        print("Excepcion es: {}".format(e))
 
 # poner reloj al principio y al final e imprimir
 # Cerramos conexión y archivo
