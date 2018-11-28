@@ -10,3 +10,7 @@ Tarea 2 de Redes
 donde la mayoria de lso terminos se explican solos excepto `[3-WAY HANDSHAKE]` que corresponde a un `True` o un `False` dependiendo de si se quiere usar 3-way handshake o no.
 - El cliente le comunica al servidor si se ocupa 3-way handshake con un parametro que se envia como un dato en el mensaje de SYN.
 - El servidor setea su timeout a 1s cuando recibe el primer mensaje SYN.
+
+- en la ventana se guardan los mensaje codificados en byte.
+
+- Los archivos fueron probados enviando archivos `.txt` y `.jpg`.
