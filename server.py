@@ -155,11 +155,9 @@ while True:
 
 # Finalizar conexion
 end_conection = [message]
-print(f'envie {message}')
 header = "{:04}|{:04}|{}".format(seq, -1, FIN)
 message = header.encode() + b''
 the_socket.sendto(message, address)
-print(f'envio ahora {message}')
 seq = (seq + 1) % num_seq
 end_conection.append(message)
 while True:
@@ -170,7 +168,6 @@ while True:
             break
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
-        print("LLego5: {}".format(rmessage.decode()))
         if rmessage:
             header = rmessage[:11].decode()
             data = rmessage[11:]

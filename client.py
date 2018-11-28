@@ -176,7 +176,7 @@ print("empiezo fin de conexion")
 header = "{:04}|{:04}|{}".format(seq, -1, FIN)
 message = header.encode() + b''
 the_socket.sendto(message, address)
-the_socket.settimeout(timeout)
+seq = (seq + 1) % num_seq
 # espero ack de fin
 while True:
     try:
@@ -184,7 +184,7 @@ while True:
             print("Error: espera de ack para fin")
             break
         received_message, address = the_socket.recvfrom(buf)
-        received_time = datetime.datetime.now()
+        print("LLego: {}".format(received_message))
         received_header = received_message[:11].decode()
         received_data = received_message[11:]
         rSeq, rAck, rType = received_header.split("|")
@@ -204,10 +204,11 @@ while True:
             print("Error: espera de fin de servidor para ack")
             break
         received_message, address = the_socket.recvfrom(buf)
+        print("LLego: {}".format(received_message))
         received_time = datetime.datetime.now()
         received_header = received_message[:11].decode()
         received_data = received_message[11:]
-        rSeq, rAck, rType = received_header.split("|||")
+        rSeq, rAck, rType = received_header.split("|")
         if str(rType) == str(FIN):
             ack = (int(rSeq) + 1) % num_seq
             header = "{:04}|{:04}|{}".format(seq, ack, ACK)
@@ -230,3 +231,4 @@ sending_file.close()
 end_time = datetime.datetime.now()
 delta = end_time - start_time
 print("El tiempo de duracion es {} segundos".format(delta.total_seconds()))
+print("El timeout final fue {}".format(timeout))
