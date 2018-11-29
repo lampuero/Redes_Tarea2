@@ -5,7 +5,7 @@ import os
 
 # Parámetros para echar a correr el enviador
 if len(sys.argv) != 4:
-    print "python sender.py [IPADDRESS] [PORTNUMBER] [FILENAME]"
+    print("python sender.py [IPADDRESS] [PORTNUMBER] [FILENAME]")
     sys.exit()
 
 # Armamos el socket
@@ -20,77 +20,51 @@ buf = 1024
 address = (Server_IP,Server_Port)
 seq = 0
 ack = 0
+syn = 1
 # Obtenemos los parámetros del archivo a enviar
 file_name=sys.argv[3]
 total_size = os.path.getsize(file_name)
 current_size = 0
 percent = round(0,2)
 
-# Abrimos el archivo
-sending_file = open(file_name,"rb")
-
-# 'Codificamos' el header
-data = str(file_name) + "|||" + str(total_size) + "|||" + str(seq)
-
-# while para enviar datos
+# while para three-way handshake
 while True:
-    # Mandamos los datos donde corresponde
-    the_socket.sendto(data,address)
 
-    # Actualizamos el número de secuencia
-    seq = (seq + 1) % 2
+    # Esperamos un SYN para iniciar conección y la dirección del socket que mandó los datos
+    data, address = the_socket.recvfrom(buf)
 
-    # Seteamos un timeout (bloqueamos el socket después de 0.5s)
-    the_socket.settimeout(0.5)
+    if data:
+        # Separamos los datos recibidos
+        (syn_client, seq_client) = data.split("|||")
 
-    # Contador de intentos
-    try_counter = 0
+        # Si recibimos el SYN esperado, se reserva un buffer para el cliente
+        if str(syn) == str(syn_client):
+            buf = 1024
+            ack = int(str(seq_client))
+            # 'Codificamos' el SYNACK y el numero de secuencia X a mandar
+            data = str(syn) + "|||" + str(ack) + "|||" + str(seq)
+            #enviamos SYNACK
+            the_socket.sendto(str(ack), address)
+            # Actualizamos el ack
+            ack = int(str(seq_client)) + 1
 
-    # Vemos que llegue el ACK
-    while True:
-        try:
-            # Si en 10 intentos no funciona, salimos
-            if try_counter == 10:
-                print "error"
-                break
+            #Actualizamos el numero de secuencia
+            seq += 1
+            break
 
-            # Obtenemos la respuesta (estamos esperando un ACK)
-            ack, address = the_socket.recvfrom(buf)
+#esperamos ACK del SYNACK para comenzar a enviar datos
+while True:
+    data, address = the_socket.recvfrom(buf)
+    if data:
+        # Separamos los datos recibidos
+        (ack_client, seq_client) = data.split("|||")
+        # Si recibimos el ACK esperado, terminamos 3-way
+        if str(ack_client) == str(seq):
+            break
 
-            # Si recibimos lo que esperabamos, actualizamos cómo va el envío
-            if (str(ack) == str(seq)):
-                print str(current_size) + " / " + str(total_size) + "(current size / total size), " + str(percent) + "%"
 
-                # y pasamos a actualizar los parametros en (**)
-                break
-
-            # Si no, seguimos esperando el ack
-            else:
-                print "ack is not equal to seq"
-
-        except:
-            # Si ocurre un error avisamos y aumentamos el contador
-            try_counter += 1
-            print "timed out"
-            the_socket.sendto(data,address)
-
-    # Si en 10 intentos no funciona, salimos
-    if try_counter == 10:
-        break
-
-    # (**) Actualizamos los parámetros :
-    data = sending_file.read(buf-1)
-    current_size += len(data)
-    percent = round(float(current_size) / float(total_size) * 100,2)
-
-    # Si no hay datos mandamos un string vacío y dejamos de enviar cosas
-    if not data:
-        the_socket.sendto("",address)
-        break
-
-    # Actualizamos los datos a enviar
-    data += str(seq)
+#enviamos datos
+#(...)
 
 # Cerramos conexión y archivo
 the_socket.close()
-sending_file.close()
