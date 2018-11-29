@@ -37,6 +37,8 @@ message = ""
 # Conexion
 send_SYNACK = False
 three_way = 1
+
+# Espera SYN
 while True:
     rmessage, address = the_socket.recvfrom(buf)
     if rmessage:
@@ -53,42 +55,63 @@ while True:
             three_way = int(data)
             break
 
-while three_way == 1:
-    try:
-        rmessage, address = the_socket.recvfrom(buf)
-        if rmessage:
-            header = rmessage[:11].decode()
-            data = rmessage[11:]
-            rSeq, rAck, rType = header.split("|")
-            if int(rSeq) == expected_seq and str(rType) == str(ACK) and int(rAck) == int(seq):
-                expected_seq = (expected_seq + 1) % num_seq
-                break
-    except Exception as e:
-        print(e)
-        try_counter += 1
-        the_socket.sendto(message, address)
-
-# Descarga
-
-
 # Seteamos un timeout
 the_socket.settimeout(1)
 
-filename = ".txt"
-# recibo nombre archivo
-while True:
+# Espera ACK en caso 3-way
+while three_way == 1:
     try:
-        # Si en 10 intentos no funciona, salimos
         if try_counter == 10:
-            print("Error: Alcanzado maximos intentos al recibir nombre archivo")
+            print("Error: Alcanzado maximos intentos al recibir ACK de SYNACK")
             break
-        # Obtenemos los datos desde el socket
+
         rmessage, address = the_socket.recvfrom(buf)
+
         if rmessage:
+
+            try_counter = 0
+
             header = rmessage[:11].decode()
             data = rmessage[11:]
+
             rSeq, rAck, rType = header.split("|")
-            # Si no es lo que esperabamos, descartamos
+
+            if int(rSeq) == expected_seq and str(rType) == str(ACK) and int(rAck) == int(seq):
+                expected_seq = (expected_seq + 1) % num_seq
+                break
+
+    except socket.timeout as e:
+        print("Excepcion es: {}".format(e))
+        try_counter += 1
+        the_socket.sendto(message, address)
+
+    except Exception as e:
+        print("Excepcion es: {}".format(e))
+
+
+# Descarga
+
+# Nombre archivo
+filename = ".txt"
+
+# Recibo nombre archivo
+while True:
+    try:
+        if try_counter == 10:
+            print("Error: Alcanzado maximos intentos al recibir nombre de archivo")
+            break
+
+        rmessage, address = the_socket.recvfrom(buf)
+
+        if rmessage:
+
+            try_counter = 0
+
+            header = rmessage[:11].decode()
+            data = rmessage[11:]
+
+            rSeq, rAck, rType = header.split("|")
+
             if int(rSeq) != int(expected_seq):
                 the_socket.sendto(message, address)
                 continue
@@ -100,32 +123,40 @@ while True:
                 seq = (seq + 1) % num_seq
                 expected_seq = (expected_seq + 1) % num_seq
                 the_socket.sendto(message, address)
+                try_counter = 0
                 break
-            try_counter = 0
-    except Exception as e:
-        print(e)
+
+    except socket.timeout as e:
+        print("Excepcion es: {}".format(e))
         try_counter += 1
         the_socket.sendto(message, address)
+
+    except Exception as e:
+        print("Excepcion es: {}".format(e))
+
 
 # Abrimos archivo para guardar datos
 downloading_file = open("received_" + filename, "wb")
 
 # Descarga archivo
-try_counter = 0
+
 while True:
     try:
-        # Si en 10 intentos no funciona, salimos
         if try_counter == 10:
             print("Error: Alcanzado maximos intentos al recibir datos de archivo")
             break
 
-        # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
+
         if rmessage:
+
+            try_counter = 0
+
             header = rmessage[:11].decode()
             data = rmessage[11:]
+
             rSeq, rAck, rType = header.split("|")
-            # Si no es lo que esperabamos, descartamos
+
             if int(rSeq) != int(expected_seq):
                 the_socket.sendto(message, address)
                 continue
@@ -135,11 +166,11 @@ while True:
                 header = "{:04}|{:04}|{}".format(seq, ack, ACK)
                 message = header.encode() + b''
                 the_socket.sendto(message, address)
+
                 # actualizo secuencia de proximo mensaje a enviar y la secuencia esperada de proximo mensaje a recibir
                 seq = (seq + 1) % num_seq
                 expected_seq = (expected_seq + 1) % num_seq
-                # reinicio counter de intentos
-                try_counter = 0
+
             elif str(rType) == str(FIN):
                 ack = (int(rSeq) + 1) % num_seq
                 header = "{:04}|{:04}|{}".format(seq, ack, ACK)
@@ -148,43 +179,60 @@ while True:
                 seq = (seq + 1) % num_seq
                 expected_seq = (expected_seq + 1) % num_seq
                 break
-    except Exception as e:
-        print(e)
+    except socket.timeout as e:
+        print("Excepcion es: {}".format(e))
         try_counter += 1
         the_socket.sendto(message, address)
 
+    except Exception as e:
+        print("Excepcion es: {}".format(e))
+
 # Finalizar conexion
+# Guardo ultimo ACK enviado
 end_conection = [message]
+
+# Envio FIN
 header = "{:04}|{:04}|{}".format(seq, -1, FIN)
 message = header.encode() + b''
 the_socket.sendto(message, address)
 seq = (seq + 1) % num_seq
+
+# Guardo FIN enviado
 end_conection.append(message)
+
+# Espero ACK de FIN
 while True:
     try:
-        # Si en 10 intentos no funciona, salimos
         if try_counter == 10:
             print("Error: Alcanzado maximos intentos al esperar ACK de FIN")
             break
         # Obtenemos los datos desde el socket
         rmessage, address = the_socket.recvfrom(buf)
         if rmessage:
+
+            try_counter = 0
+
             header = rmessage[:11].decode()
             data = rmessage[11:]
+
             rSeq, rAck, rType = header.split("|")
-            # Si no es lo que esperabamos, descartamos
+
             if int(rSeq) != int(expected_seq):
                 for msg in end_conection:
                     the_socket.sendto(msg, address)
                 continue
             elif str(rType) == str(ACK):
                 break
-            try_counter = 0
-    except Exception as e:
-        print(e)
+
+    except socket.timeout as e:
+        print("Excepcion es: {}".format(e))
         try_counter += 1
         for msg in end_conection:
             the_socket.sendto(msg, address)
+
+    except Exception as e:
+        print("Excepcion es: {}".format(e))
+
 # Cerramos conexion y archivo
 downloading_file.close()
 the_socket.close()
